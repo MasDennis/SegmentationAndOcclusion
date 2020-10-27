@@ -5,6 +5,17 @@
 //  Created by Dennis Ippel on 07/10/2020.
 //
 
+// https://machinethink.net/blog/coreml-image-mlmultiarray/
+// import coremltools
+// import coremltools.proto.FeatureTypes_pb2 as ft
+// spec = coremltools.utils.load_spec("DeepLabV3Int8LUT.mlmodel")
+// print(spec.description)
+// output = spec.description.output[0]
+// output.type.imageType.height = 513
+// output.type.imageType.width = 513
+// output.type.imageType.colorSpace = ft.ImageFeatureType.GRAYSCALE
+// coremltools.utils.save_spec(spec, "DeepLabV3Int8Image.mlmodel"
+
 import UIKit
 import Vision
 import ARKit
@@ -17,26 +28,21 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     
     private var viewportSize: CGSize!
     
+    private let labels = ["background", "aeroplane", "bicycle", "bird", "board", "bottle", "bus", "car", "cat", "chair", "cow", "diningTable", "dog", "horse", "motorbike", "person", "pottedPlant", "sheep", "sofa", "train", "tvOrMonitor"]
+    
     override var shouldAutorotate: Bool { return false }
+    
+    private weak var quadNode: GlowOutlineQuadNode?
+    
+    private var textureCache: CVMetalTextureCache?
     
     lazy var segmentationRequest: VNCoreMLRequest = {
         do {
-            let model = try VNCoreMLModel(for: DeepLabV3Int8LUT(configuration: MLModelConfiguration()).model)
+            let model = try VNCoreMLModel(for: DeepLabV3Int8Image(configuration: MLModelConfiguration()).model)
             let request = VNCoreMLRequest(model: model) { [weak self] request, error in
                 self?.processSegmentations(for: request, error: error)
             }
-            return request
-        } catch {
-            fatalError("Failed to load Vision ML model.")
-        }
-    }()
-    
-    lazy var objectDetectionRequest: VNCoreMLRequest = {
-        do {
-            let model = try VNCoreMLModel(for: YOLOv3TinyInt8LUT(configuration: MLModelConfiguration()).model)
-            let request = VNCoreMLRequest(model: model) { [weak self] request, error in
-                self?.processObjectDetections(for: request, error: error)
-            }
+            request.imageCropAndScaleOption = .scaleFill
             return request
         } catch {
             fatalError("Failed to load Vision ML model.")
@@ -47,8 +53,17 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         super.viewDidLoad()
         
         sceneView.delegate = self
+        sceneView.debugOptions = [.showFeaturePoints]
+        sceneView.usesReverseZ = true
         
-        viewportSize = sceneView.frame.size
+        viewportSize = UIScreen.main.bounds.size
+        
+        let quadNode = GlowOutlineQuadNode(sceneView: sceneView)
+        quadNode.renderingOrder = 100
+        quadNode.classificationLabelIndex = UInt(labels.firstIndex(of: "bottle") ?? 0)
+        sceneView.scene.rootNode.addChildNode(quadNode)
+        
+        self.quadNode = quadNode
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -67,26 +82,8 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         sceneView.session.run(configuration, options: [.removeExistingAnchors, .resetTracking])
     }
     
-    var recognizedObjectBoundingBox: CGRect?
-    
-    private func processObjectDetections(for request: VNRequest, error: Error?) {
-        guard error == nil else {
-            print("Object detection error: \(error!.localizedDescription)")
-            return
-        }
-        print("processdetections")
-        guard let objectObservation = request.results?.first as? VNRecognizedObjectObservation,
-              let label = objectObservation.labels.first,
-              label.identifier == "cup",
-              label.confidence > 0.9
-        else {
-            recognizedObjectBoundingBox = nil
-            return
-        }
-        
-        recognizedObjectBoundingBox = objectObservation.boundingBox
-    }
-
+    private var commandQueue: MTLCommandQueue?
+    private var renderTex: MTLTexture?
     
     private func processSegmentations(for request: VNRequest, error: Error?) {
         guard error == nil else {
@@ -94,35 +91,71 @@ class ViewController: UIViewController, ARSCNViewDelegate {
             return
         }
         
-        print("processsegmentations")
-
-        guard let observation = request.results?.first as? VNCoreMLFeatureValueObservation,
-              let boundingBox = recognizedObjectBoundingBox,
-              let multiArray = observation.featureValue.multiArrayValue
-        else { return }
+        guard let observation = request.results?.first as? VNPixelBufferObservation else { return }
         
-        print("segmen2222")
-
+        SCNTransaction.begin()
+        SCNTransaction.animationDuration = 0
+        defer { SCNTransaction.commit() }
         
-        let mapSize = CGSize(width: multiArray.shape[0].intValue,
-                             height: multiArray.shape[1].intValue)
-        let segmentationMap = observation.featureValue.multiArrayValue
-        print(mapSize)
-//        let image = segmentationMap?.cgImage()
-    }
-    
-    func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
+        // kCVPixelFormatType_OneComponent8
+        let pixelBuffer = observation.pixelBuffer.copyToMetalCompatible()!
+        
+//        if commandQueue == nil {
+//            commandQueue = sceneView.device!.makeCommandQueue()
+//
+//            let descr = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .r8Uint, width: 513, height: 513, mipmapped: false)
+//            descr.usage = [.shaderWrite, .shaderRead]
+//            let tex = sceneView.device?.makeTexture(descriptor: descr)!
+//            renderTex = tex
+//        }
+//
+//        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+//        let context = CIContext(mtlDevice: sceneView.device!)
+//        context.render(ciImage, to: renderTex!, commandBuffer: nil, bounds: CGRect(x: 0, y: 0, width: 513, height: 513), colorSpace: CGColorSpaceCreateDeviceGray())
+//
+//        quadNode?.segmentationTexture = renderTex
+        
+        if textureCache == nil && CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, MTLCreateSystemDefaultDevice()!, nil, &textureCache) != kCVReturnSuccess {
+            assertionFailure()
+            return
+        }
+
+        var segmentationTexture: CVMetalTexture?
+
+        let result = CVMetalTextureCacheCreateTextureFromImage(kCFAllocatorDefault,
+                                                               textureCache.unsafelyUnwrapped,
+                                                               pixelBuffer,
+                                                               nil,
+                                                               .r8Uint,
+                                                               CVPixelBufferGetWidth(pixelBuffer),
+                                                               CVPixelBufferGetHeight(pixelBuffer),
+                                                               0,
+                                                               &segmentationTexture)
+
+        guard result == kCVReturnSuccess,
+            let image = segmentationTexture,
+            let texture = CVMetalTextureGetTexture(image)
+            else { return }
+
+        quadNode?.segmentationTexture = texture
     }
     
     func renderer(_ renderer: SCNSceneRenderer, willRenderScene scene: SCNScene, atTime time: TimeInterval) {
+        // 1440 x 1920  0.75  |  1440 x 1920   0.75
+        //  375 x 812   0.46  |  1024 x 1366   0.75
+        // 1125 x 2436  0.46  |  2048 x 2732   0.75
         guard let capturedImage = sceneView.session.currentFrame?.capturedImage else { return }
+        
+        let capturedImageAspectRatio = Float(CVPixelBufferGetHeight(capturedImage)) / Float(CVPixelBufferGetWidth(capturedImage))
+        let screenAspectRatio = Float(viewportSize.width / viewportSize.height)
+        quadNode?.correctionAspectRatio = capturedImageAspectRatio * (screenAspectRatio / capturedImageAspectRatio)
         
         let imageRequestHandler = VNImageRequestHandler(cvPixelBuffer: capturedImage,
                                                         orientation: .leftMirrored,
                                                         options: [:])
         
         do {
-            try imageRequestHandler.perform([objectDetectionRequest, segmentationRequest])
+            try imageRequestHandler.perform([segmentationRequest])
         } catch {
             print("Failed to perform image request.")
         }
