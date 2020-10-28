@@ -43,7 +43,7 @@ class GlowOutlineQuadNode: SCNNode {
         self.renderTexturePipelineState = pipeline
         
         let depthStateDesciptor = MTLDepthStencilDescriptor()
-        depthStateDesciptor.isDepthWriteEnabled = false
+        depthStateDesciptor.isDepthWriteEnabled = true
         guard let state = device.makeDepthStencilState(descriptor:depthStateDesciptor) else { return }
         depthState = state
         

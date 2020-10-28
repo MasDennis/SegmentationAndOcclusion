@@ -46,12 +46,18 @@ vertex ScreenQuadVertex screenQuadVertex(uint vertex_id [[vertex_id]],
     return outVertex;
 }
 
-fragment float4 screenQuadFragment(ScreenQuadVertex inVertex [[stage_in]],
+struct FragmentOut {
+    float4 color [[color(0)]];
+    float depth [[depth(any)]];
+};
+
+fragment FragmentOut screenQuadFragment(ScreenQuadVertex inVertex [[stage_in]],
                                    float4 frameBufferColor [[color(0)]],
                                    texture2d<uint, access::sample> segmentationTexture [[texture(0)]],
                                    const constant Uniforms& uniforms [[buffer(0)]])
 {
-    float4 outColor = frameBufferColor;
+    FragmentOut out;
+    out.color = float4(0);
     float2 uv = inVertex.texcoord;
     uv.x -= uniforms.regionOfInterestOrigin.x;
     uv.y -= 1.0 - (uniforms.regionOfInterestOrigin.y + uniforms.regionOfInterestSize.y);
@@ -59,8 +65,11 @@ fragment float4 screenQuadFragment(ScreenQuadVertex inVertex [[stage_in]],
     
     uint4 texColor = segmentationTexture.sample(s, uv);
     if(texColor.r == uniforms.classificationLabelIndex) {
-        outColor = mix(float4(0, 1, 0, 1), outColor, 0.25);
+        out.color = float4(0, 1, 0, 1);
+        out.depth = 0.5;
+    } else {
+        out.depth = 0;
     }
 
-    return outColor;
+    return out;
 }

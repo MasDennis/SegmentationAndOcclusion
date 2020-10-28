@@ -24,17 +24,16 @@ import CoreImage
 
 class ViewController: UIViewController, ARSCNViewDelegate {
 
-    @IBOutlet var sceneView: ARSCNView!
+    @IBOutlet weak var sceneView: ARSCNView!
     
-    private var viewportSize: CGSize!
+    private var screenSize: CGSize!
+    private var textureCache: CVMetalTextureCache?
     
     private let labels = ["background", "aeroplane", "bicycle", "bird", "board", "bottle", "bus", "car", "cat", "chair", "cow", "diningTable", "dog", "horse", "motorbike", "person", "pottedPlant", "sheep", "sofa", "train", "tvOrMonitor"]
     
-    override var shouldAutorotate: Bool { return false }
-    
     private weak var quadNode: GlowOutlineQuadNode?
     
-    private var textureCache: CVMetalTextureCache?
+    override var shouldAutorotate: Bool { return false }
     
     lazy var segmentationRequest: VNCoreMLRequest = {
         do {
@@ -66,11 +65,8 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         super.viewDidLoad()
         
         sceneView.delegate = self
-        sceneView.debugOptions = [.showFeaturePoints]
-        sceneView.showsStatistics = true
-        sceneView.contentScaleFactor = max(1, sceneView.contentScaleFactor - 1)
         
-        viewportSize = UIScreen.main.bounds.size
+        screenSize = UIScreen.main.bounds.size
         
         let quadNode = GlowOutlineQuadNode(sceneView: sceneView)
         quadNode.renderingOrder = 100
@@ -96,9 +92,6 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         sceneView.session.run(configuration, options: [.removeExistingAnchors, .resetTracking])
     }
     
-    private var commandQueue: MTLCommandQueue?
-    private var renderTex: MTLTexture?
-    
     private func processSegmentations(for request: VNRequest, error: Error?) {
         guard error == nil else {
             print("Segmentation error: \(error!.localizedDescription)")
@@ -107,10 +100,6 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         
         guard let observation = request.results?.first as? VNPixelBufferObservation else { return }
 
-        SCNTransaction.begin()
-        SCNTransaction.animationDuration = 0
-        defer { SCNTransaction.commit() }
-        
         let pixelBuffer = observation.pixelBuffer.copyToMetalCompatible()!
         
         if textureCache == nil && CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, MTLCreateSystemDefaultDevice()!, nil, &textureCache) != kCVReturnSuccess {
@@ -138,65 +127,32 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         quadNode?.segmentationTexture = texture
     }
     
-//    var objDetRec: CGRect = .zero
-    
     private func processObjectDetections(for request: VNRequest, error: Error?) {
         guard error == nil else {
             print("Segmentation error: \(error!.localizedDescription)")
             return
         }
         
-        guard let results = request.results else { return }
+        guard var objectObservations = request.results as? [VNRecognizedObjectObservation] else { return }
         
-        var bestIndex = Int.max
-        var bestObs: VNRecognizedObjectObservation?
-            for observation in results where observation is VNRecognizedObjectObservation {
-                guard let objectObservation = observation as? VNRecognizedObjectObservation,
-                    let topLabelObservation = objectObservation.labels.first
-                    else { continue }
-                
-                if let obs = objectObservation.labels.first(where: { $0.identifier == "car" }),
-                   let index = objectObservation.labels.firstIndex(of: obs) {
-                    
-                    if index < 3, index < bestIndex {
-                        bestIndex = index
-                        bestObs = objectObservation
-                    }
-                }
-                
-//                guard topLabelObservation.identifier == "car" else { continue }
-                
-//                segmentationRequest.regionOfInterest = objectObservation.boundingBox
-//                quadNode?.regionOfInterest = objectObservation.boundingBox
-//                return
-//                objDetRec = objectObservation.boundingBox
-//                return
-//                guard let capturedImage = sceneView.session.currentFrame?.capturedImage else { return }
-//
-//                let segmentationRequestHandler = VNImageRequestHandler(cvPixelBuffer: capturedImage,
-//                                                                       orientation: .leftMirrored,
-//                                                                       options: [:])
-//                segmentationRequest.regionOfInterest = objectObservation.boundingBox
-//
-//                do {
-//                    try segmentationRequestHandler.perform([segmentationRequest])
-//                } catch {
-//                    print("Failed to perform image request.")
-//                }
-            }
-        
-        if let best = bestObs {
-            segmentationRequest.regionOfInterest = best.boundingBox
-            quadNode?.regionOfInterest = best.boundingBox
+        objectObservations.sort {
+            return $0.labels.firstIndex(where: { $0.identifier == "car" }) ?? -1 < $1.labels.firstIndex(where: { $0.identifier == "car" }) ?? -1
         }
         
+        guard let bestObservation = objectObservations.first,
+              let index = bestObservation.labels.firstIndex(where: { $0.identifier == "car" }),
+              index < 3
+        else { return }
+        
+        segmentationRequest.regionOfInterest = bestObservation.boundingBox
+        quadNode?.regionOfInterest = bestObservation.boundingBox
     }
     
     func renderer(_ renderer: SCNSceneRenderer, willRenderScene scene: SCNScene, atTime time: TimeInterval) {
         guard let capturedImage = sceneView.session.currentFrame?.capturedImage else { return }
         
         let capturedImageAspectRatio = Float(CVPixelBufferGetWidth(capturedImage)) / Float(CVPixelBufferGetHeight(capturedImage))
-        let screenAspectRatio = Float(viewportSize.height / viewportSize.width)
+        let screenAspectRatio = Float(screenSize.height / screenSize.width)
         quadNode?.correctionAspectRatio = screenAspectRatio / capturedImageAspectRatio
         
         let imageRequestHandler = VNImageRequestHandler(cvPixelBuffer: capturedImage,
