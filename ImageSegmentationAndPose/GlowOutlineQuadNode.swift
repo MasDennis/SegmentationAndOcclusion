@@ -76,6 +76,7 @@ extension GlowOutlineQuadNode: SCNNodeRendererDelegate {
         renderCommandEncoder.setRenderPipelineState(renderTexturePipelineState)
         renderCommandEncoder.setFragmentTexture(segmentationTexture, index: 0)
         renderCommandEncoder.setFragmentBuffer(uniformsBuffer, offset: 0, index: 0)
+        renderCommandEncoder.setVertexBuffer(uniformsBuffer, offset: 0, index: 0)
         renderCommandEncoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
     }
 }

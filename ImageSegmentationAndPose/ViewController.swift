@@ -54,7 +54,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         
         sceneView.delegate = self
         sceneView.debugOptions = [.showFeaturePoints]
-        sceneView.usesReverseZ = true
+        sceneView.showsStatistics = true
         
         viewportSize = UIScreen.main.bounds.size
         
@@ -97,23 +97,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         SCNTransaction.animationDuration = 0
         defer { SCNTransaction.commit() }
         
-        // kCVPixelFormatType_OneComponent8
         let pixelBuffer = observation.pixelBuffer.copyToMetalCompatible()!
-        
-//        if commandQueue == nil {
-//            commandQueue = sceneView.device!.makeCommandQueue()
-//
-//            let descr = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: .r8Uint, width: 513, height: 513, mipmapped: false)
-//            descr.usage = [.shaderWrite, .shaderRead]
-//            let tex = sceneView.device?.makeTexture(descriptor: descr)!
-//            renderTex = tex
-//        }
-//
-//        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
-//        let context = CIContext(mtlDevice: sceneView.device!)
-//        context.render(ciImage, to: renderTex!, commandBuffer: nil, bounds: CGRect(x: 0, y: 0, width: 513, height: 513), colorSpace: CGColorSpaceCreateDeviceGray())
-//
-//        quadNode?.segmentationTexture = renderTex
         
         if textureCache == nil && CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, MTLCreateSystemDefaultDevice()!, nil, &textureCache) != kCVReturnSuccess {
             assertionFailure()
@@ -141,14 +125,11 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     }
     
     func renderer(_ renderer: SCNSceneRenderer, willRenderScene scene: SCNScene, atTime time: TimeInterval) {
-        // 1440 x 1920  0.75  |  1440 x 1920   0.75
-        //  375 x 812   0.46  |  1024 x 1366   0.75
-        // 1125 x 2436  0.46  |  2048 x 2732   0.75
         guard let capturedImage = sceneView.session.currentFrame?.capturedImage else { return }
         
-        let capturedImageAspectRatio = Float(CVPixelBufferGetHeight(capturedImage)) / Float(CVPixelBufferGetWidth(capturedImage))
-        let screenAspectRatio = Float(viewportSize.width / viewportSize.height)
-        quadNode?.correctionAspectRatio = capturedImageAspectRatio * (screenAspectRatio / capturedImageAspectRatio)
+        let capturedImageAspectRatio = Float(CVPixelBufferGetWidth(capturedImage)) / Float(CVPixelBufferGetHeight(capturedImage))
+        let screenAspectRatio = Float(viewportSize.height / viewportSize.width)
+        quadNode?.correctionAspectRatio = screenAspectRatio / capturedImageAspectRatio
         
         let imageRequestHandler = VNImageRequestHandler(cvPixelBuffer: capturedImage,
                                                         orientation: .leftMirrored,

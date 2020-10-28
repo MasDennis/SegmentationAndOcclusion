@@ -33,10 +33,12 @@ constant float4x2 quadTextureCoordinates = float4x2(float2( 0.0, 1.0 ),
                                                  float2( 0.0, 0.0 ),
                                                  float2( 1.0, 0.0 ));
 
-vertex ScreenQuadVertex screenQuadVertex(uint vertex_id [[vertex_id]])
+vertex ScreenQuadVertex screenQuadVertex(uint vertex_id [[vertex_id]],
+                                         const constant Uniforms& uniforms [[buffer(0)]])
 {
     ScreenQuadVertex outVertex;
     outVertex.position = quadVertices[vertex_id];
+    outVertex.position.x *= uniforms.capturedImageAspectRatio;
     outVertex.texcoord = quadTextureCoordinates[vertex_id];
     
     return outVertex;
@@ -50,9 +52,6 @@ fragment float4 screenQuadFragment(ScreenQuadVertex inVertex [[stage_in]],
     float4 outColor = frameBufferColor;
     float2 uv = inVertex.texcoord;
     uv.x = 1.0 - uv.x;
-    uv.x -= 0.5;
-    uv.x *= uniforms.capturedImageAspectRatio;
-    uv.x += 0.5;
     uint4 texColor = segmentationTexture.sample(s, uv);
     if(texColor.r == uniforms.classificationLabelIndex) {
         outColor = mix(float4(0, 0, 1, 1), outColor, 0.25);
