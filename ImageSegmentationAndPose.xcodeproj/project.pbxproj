@@ -7,10 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		EF18706E2549289100290EFF /* YOLOv3TinyInt8LUT.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = EF18706D2549289100290EFF /* YOLOv3TinyInt8LUT.mlmodel */; };
 		EF413594254766BB00C05FC7 /* DeepLabV3Int8Image.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = EF413593254766BB00C05FC7 /* DeepLabV3Int8Image.mlmodel */; };
-		EF41359725476F0400C05FC7 /* DeepLabV3.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = EF41359625476F0400C05FC7 /* DeepLabV3.mlmodel */; };
 		EF4135BC2547710400C05FC7 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = EF4135BB2547710400C05FC7 /* Shaders.metal */; };
 		EF4135BF2547746100C05FC7 /* GlowOutlineQuadNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF4135BE2547746100C05FC7 /* GlowOutlineQuadNode.swift */; };
+		EF65AAC425493B3000FBED7A /* YOLOv3Int8LUT.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = EF65AAC325493B3000FBED7A /* YOLOv3Int8LUT.mlmodel */; };
+		EF65AAC725493BB700FBED7A /* YOLOv3Tiny.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = EF65AAC625493BB700FBED7A /* YOLOv3Tiny.mlmodel */; };
 		EF6AB205254871BD0048FDD8 /* CVPixelBuffer+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF6AB204254871BD0048FDD8 /* CVPixelBuffer+Helpers.swift */; };
 		EFB6F02D252D96520070AEBF /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFB6F02C252D96520070AEBF /* AppDelegate.swift */; };
 		EFB6F02F252D96520070AEBF /* art.scnassets in Resources */ = {isa = PBXBuildFile; fileRef = EFB6F02E252D96520070AEBF /* art.scnassets */; };
@@ -18,15 +20,15 @@
 		EFB6F034252D96520070AEBF /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = EFB6F032252D96520070AEBF /* Main.storyboard */; };
 		EFB6F036252D96530070AEBF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EFB6F035252D96530070AEBF /* Assets.xcassets */; };
 		EFB6F039252D96530070AEBF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = EFB6F037252D96530070AEBF /* LaunchScreen.storyboard */; };
-		EFB6F046252D9F5B0070AEBF /* DeepLabV3Int8LUT.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = EFB6F044252D9F5B0070AEBF /* DeepLabV3Int8LUT.mlmodel */; };
-		EFD3277625488DCD00954F94 /* DeepLabV3Image.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = EFD3277525488DCD00954F94 /* DeepLabV3Image.mlmodel */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		EF18706D2549289100290EFF /* YOLOv3TinyInt8LUT.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = YOLOv3TinyInt8LUT.mlmodel; sourceTree = "<group>"; };
 		EF413593254766BB00C05FC7 /* DeepLabV3Int8Image.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = DeepLabV3Int8Image.mlmodel; sourceTree = "<group>"; };
-		EF41359625476F0400C05FC7 /* DeepLabV3.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = DeepLabV3.mlmodel; sourceTree = "<group>"; };
 		EF4135BB2547710400C05FC7 /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
 		EF4135BE2547746100C05FC7 /* GlowOutlineQuadNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlowOutlineQuadNode.swift; sourceTree = "<group>"; };
+		EF65AAC325493B3000FBED7A /* YOLOv3Int8LUT.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = YOLOv3Int8LUT.mlmodel; sourceTree = "<group>"; };
+		EF65AAC625493BB700FBED7A /* YOLOv3Tiny.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = YOLOv3Tiny.mlmodel; sourceTree = "<group>"; };
 		EF6AB204254871BD0048FDD8 /* CVPixelBuffer+Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CVPixelBuffer+Helpers.swift"; sourceTree = "<group>"; };
 		EFB6F029252D96520070AEBF /* ImageSegmentationAndPose.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ImageSegmentationAndPose.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EFB6F02C252D96520070AEBF /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -36,8 +38,6 @@
 		EFB6F035252D96530070AEBF /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		EFB6F038252D96530070AEBF /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		EFB6F03A252D96530070AEBF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		EFB6F044252D9F5B0070AEBF /* DeepLabV3Int8LUT.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = DeepLabV3Int8LUT.mlmodel; sourceTree = "<group>"; };
-		EFD3277525488DCD00954F94 /* DeepLabV3Image.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = DeepLabV3Image.mlmodel; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -71,9 +71,9 @@
 			isa = PBXGroup;
 			children = (
 				EF413593254766BB00C05FC7 /* DeepLabV3Int8Image.mlmodel */,
-				EFB6F044252D9F5B0070AEBF /* DeepLabV3Int8LUT.mlmodel */,
-				EF41359625476F0400C05FC7 /* DeepLabV3.mlmodel */,
-				EFD3277525488DCD00954F94 /* DeepLabV3Image.mlmodel */,
+				EF65AAC325493B3000FBED7A /* YOLOv3Int8LUT.mlmodel */,
+				EF65AAC625493BB700FBED7A /* YOLOv3Tiny.mlmodel */,
+				EF18706D2549289100290EFF /* YOLOv3TinyInt8LUT.mlmodel */,
 				EFB6F02C252D96520070AEBF /* AppDelegate.swift */,
 				EFB6F02E252D96520070AEBF /* art.scnassets */,
 				EFB6F030252D96520070AEBF /* ViewController.swift */,
@@ -160,14 +160,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				EF4135BC2547710400C05FC7 /* Shaders.metal in Sources */,
+				EF65AAC725493BB700FBED7A /* YOLOv3Tiny.mlmodel in Sources */,
+				EF65AAC425493B3000FBED7A /* YOLOv3Int8LUT.mlmodel in Sources */,
 				EF6AB205254871BD0048FDD8 /* CVPixelBuffer+Helpers.swift in Sources */,
+				EF18706E2549289100290EFF /* YOLOv3TinyInt8LUT.mlmodel in Sources */,
 				EF413594254766BB00C05FC7 /* DeepLabV3Int8Image.mlmodel in Sources */,
-				EF41359725476F0400C05FC7 /* DeepLabV3.mlmodel in Sources */,
 				EF4135BF2547746100C05FC7 /* GlowOutlineQuadNode.swift in Sources */,
 				EFB6F031252D96520070AEBF /* ViewController.swift in Sources */,
-				EFB6F046252D9F5B0070AEBF /* DeepLabV3Int8LUT.mlmodel in Sources */,
 				EFB6F02D252D96520070AEBF /* AppDelegate.swift in Sources */,
-				EFD3277625488DCD00954F94 /* DeepLabV3Image.mlmodel in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

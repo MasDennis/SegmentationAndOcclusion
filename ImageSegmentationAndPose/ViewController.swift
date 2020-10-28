@@ -49,18 +49,32 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         }
     }()
     
+    lazy var objectDetectionRequest: VNCoreMLRequest = {
+        do {
+            let model = try VNCoreMLModel(for: YOLOv3Int8LUT(configuration: MLModelConfiguration()).model)
+            let request = VNCoreMLRequest(model: model) { [weak self] request, error in
+                self?.processObjectDetections(for: request, error: error)
+            }
+            request.imageCropAndScaleOption = .scaleFill
+            return request
+        } catch {
+            fatalError("Failed to load Vision ML model.")
+        }
+    }()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
         sceneView.delegate = self
         sceneView.debugOptions = [.showFeaturePoints]
         sceneView.showsStatistics = true
+        sceneView.contentScaleFactor = max(1, sceneView.contentScaleFactor - 1)
         
         viewportSize = UIScreen.main.bounds.size
         
         let quadNode = GlowOutlineQuadNode(sceneView: sceneView)
         quadNode.renderingOrder = 100
-        quadNode.classificationLabelIndex = UInt(labels.firstIndex(of: "bottle") ?? 0)
+        quadNode.classificationLabelIndex = UInt(labels.firstIndex(of: "car") ?? 0)
         sceneView.scene.rootNode.addChildNode(quadNode)
         
         self.quadNode = quadNode
@@ -92,7 +106,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         }
         
         guard let observation = request.results?.first as? VNPixelBufferObservation else { return }
-        
+
         SCNTransaction.begin()
         SCNTransaction.animationDuration = 0
         defer { SCNTransaction.commit() }
@@ -124,6 +138,60 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         quadNode?.segmentationTexture = texture
     }
     
+//    var objDetRec: CGRect = .zero
+    
+    private func processObjectDetections(for request: VNRequest, error: Error?) {
+        guard error == nil else {
+            print("Segmentation error: \(error!.localizedDescription)")
+            return
+        }
+        
+        guard let results = request.results else { return }
+        
+        var bestIndex = Int.max
+        var bestObs: VNRecognizedObjectObservation?
+            for observation in results where observation is VNRecognizedObjectObservation {
+                guard let objectObservation = observation as? VNRecognizedObjectObservation,
+                    let topLabelObservation = objectObservation.labels.first
+                    else { continue }
+                
+                if let obs = objectObservation.labels.first(where: { $0.identifier == "car" }),
+                   let index = objectObservation.labels.firstIndex(of: obs) {
+                    
+                    if index < 3, index < bestIndex {
+                        bestIndex = index
+                        bestObs = objectObservation
+                    }
+                }
+                
+//                guard topLabelObservation.identifier == "car" else { continue }
+                
+//                segmentationRequest.regionOfInterest = objectObservation.boundingBox
+//                quadNode?.regionOfInterest = objectObservation.boundingBox
+//                return
+//                objDetRec = objectObservation.boundingBox
+//                return
+//                guard let capturedImage = sceneView.session.currentFrame?.capturedImage else { return }
+//
+//                let segmentationRequestHandler = VNImageRequestHandler(cvPixelBuffer: capturedImage,
+//                                                                       orientation: .leftMirrored,
+//                                                                       options: [:])
+//                segmentationRequest.regionOfInterest = objectObservation.boundingBox
+//
+//                do {
+//                    try segmentationRequestHandler.perform([segmentationRequest])
+//                } catch {
+//                    print("Failed to perform image request.")
+//                }
+            }
+        
+        if let best = bestObs {
+            segmentationRequest.regionOfInterest = best.boundingBox
+            quadNode?.regionOfInterest = best.boundingBox
+        }
+        
+    }
+    
     func renderer(_ renderer: SCNSceneRenderer, willRenderScene scene: SCNScene, atTime time: TimeInterval) {
         guard let capturedImage = sceneView.session.currentFrame?.capturedImage else { return }
         
@@ -134,11 +202,11 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         let imageRequestHandler = VNImageRequestHandler(cvPixelBuffer: capturedImage,
                                                         orientation: .leftMirrored,
                                                         options: [:])
-        
         do {
-            try imageRequestHandler.perform([segmentationRequest])
+            try imageRequestHandler.perform([objectDetectionRequest, segmentationRequest])
         } catch {
-            print("Failed to perform image request.")
+            print("Failed to perform image request. \(error)")
+            segmentationRequest.regionOfInterest = CGRect(x: 0, y: 0, width: 1, height: 1)
         }
     }
 }

@@ -16,11 +16,14 @@ class GlowOutlineQuadNode: SCNNode {
     
     struct Uniforms {
         let capturedImageAspectRatio: simd_float1
+        let regionOfInterestOrigin: simd_float2
+        let regionOfInterestSize: simd_float2
         let classificationLabelIndex: simd_uint1
     }
     
     var correctionAspectRatio: Float = 0
     var classificationLabelIndex: UInt = 0
+    var regionOfInterest: CGRect = .zero
     
     init(sceneView: SCNView) {
         super.init()
@@ -63,12 +66,14 @@ extension GlowOutlineQuadNode: SCNNodeRendererDelegate {
               let renderCommandEncoder = renderer.currentRenderCommandEncoder,
               let segmentationTexture = segmentationTexture
         else { return }
-        
+
         var uniforms = Uniforms(capturedImageAspectRatio: correctionAspectRatio,
+                                regionOfInterestOrigin: simd_float2(x: Float(regionOfInterest.origin.x), y: Float(regionOfInterest.origin.y)),
+                                regionOfInterestSize: simd_float2(x: Float(regionOfInterest.size.width), y: Float(regionOfInterest.size.height)),
                                 classificationLabelIndex: simd_uint1(classificationLabelIndex))
         
         guard let uniformsBuffer = renderer.device?.makeBuffer(bytes: &uniforms,
-                                                               length: MemoryLayout<Uniforms>.size,
+                                                               length: MemoryLayout<Uniforms>.stride,
                                                                options: [])
         else { return }
         
