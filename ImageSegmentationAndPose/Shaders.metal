@@ -15,7 +15,9 @@ struct ScreenQuadVertex
 };
 
 struct Uniforms {
+    float4x4 modelViewProjectionMatrix;
     float capturedImageAspectRatio;
+    float nonLinearDepth;
     float2 regionOfInterestOrigin;
     float2 regionOfInterestSize;
     uint classificationLabelIndex;
@@ -65,10 +67,10 @@ fragment FragmentOut screenQuadFragment(ScreenQuadVertex inVertex [[stage_in]],
     
     uint4 texColor = segmentationTexture.sample(s, uv);
     if(texColor.r == uniforms.classificationLabelIndex) {
-        out.color = float4(0, 1, 0, 1);
-        out.depth = 0.5;
+        out.color = mix(float4(0, 1, 0, 1), frameBufferColor, 0);
+        out.depth = uniforms.nonLinearDepth;
     } else {
-        out.depth = 0;
+        discard_fragment();
     }
 
     return out;

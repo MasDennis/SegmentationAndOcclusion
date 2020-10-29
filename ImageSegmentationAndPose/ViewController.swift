@@ -30,8 +30,18 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     private var textureCache: CVMetalTextureCache?
     
     private let labels = ["background", "aeroplane", "bicycle", "bird", "board", "bottle", "bus", "car", "cat", "chair", "cow", "diningTable", "dog", "horse", "motorbike", "person", "pottedPlant", "sheep", "sofa", "train", "tvOrMonitor"]
+    private let targetObjectLabel = "car"
+    private var targetObjectLabelindex: UInt { return UInt(labels.firstIndex(of: targetObjectLabel) ?? 0) }
+    
+    private let imageRequestStateQueue = DispatchQueue(label: "ImageCaptureStateQueue")
+    private var _isRequestingImage = false
+    private(set) var isRequestingImage: Bool {
+        get { return imageRequestStateQueue.sync { return _isRequestingImage } }
+        set { imageRequestStateQueue.sync { [weak self] in self?._isRequestingImage = newValue } }
+    }
     
     private weak var quadNode: GlowOutlineQuadNode?
+    private weak var highlighterNode: SCNNode?
     
     override var shouldAutorotate: Bool { return false }
     
@@ -69,11 +79,22 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         screenSize = UIScreen.main.bounds.size
         
         let quadNode = GlowOutlineQuadNode(sceneView: sceneView)
-        quadNode.renderingOrder = 100
-        quadNode.classificationLabelIndex = UInt(labels.firstIndex(of: "car") ?? 0)
+        //quadNode.renderingOrder = 100
+        quadNode.classificationLabelIndex = targetObjectLabelindex
         sceneView.scene.rootNode.addChildNode(quadNode)
         
         self.quadNode = quadNode
+        
+        let highlighterNode = SCNNode(geometry: SCNTorus(ringRadius: 0.125, pipeRadius: 0.005))
+        highlighterNode.geometry?.firstMaterial?.diffuse.contents = UIColor.red
+        highlighterNode.isHidden = true
+        sceneView.scene.rootNode.addChildNode(highlighterNode)
+        
+        let action = SCNAction.rotateBy(x: .pi * 2.0, y: 0, z: 0, duration: 3.0)
+        let repeatAction = SCNAction.repeatForever(action)
+        highlighterNode.runAction(repeatAction)
+        
+        self.highlighterNode = highlighterNode
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -93,6 +114,10 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     }
     
     private func processSegmentations(for request: VNRequest, error: Error?) {
+        defer {
+            isRequestingImage = false
+        }
+        
         guard error == nil else {
             print("Segmentation error: \(error!.localizedDescription)")
             return
@@ -129,27 +154,60 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     
     private func processObjectDetections(for request: VNRequest, error: Error?) {
         guard error == nil else {
-            print("Segmentation error: \(error!.localizedDescription)")
+            print("Object detection error: \(error!.localizedDescription)")
             return
         }
         
         guard var objectObservations = request.results as? [VNRecognizedObjectObservation] else { return }
         
         objectObservations.sort {
-            return $0.labels.firstIndex(where: { $0.identifier == "car" }) ?? -1 < $1.labels.firstIndex(where: { $0.identifier == "car" }) ?? -1
+            return $0.labels.firstIndex(where: { $0.identifier == targetObjectLabel }) ?? -1 < $1.labels.firstIndex(where: { $0.identifier == targetObjectLabel }) ?? -1
         }
         
         guard let bestObservation = objectObservations.first,
-              let index = bestObservation.labels.firstIndex(where: { $0.identifier == "car" }),
+              let index = bestObservation.labels.firstIndex(where: { $0.identifier == targetObjectLabel }),
               index < 3
         else { return }
         
         segmentationRequest.regionOfInterest = bestObservation.boundingBox
         quadNode?.regionOfInterest = bestObservation.boundingBox
+        placeHighlighterNode(atCenterOfBoundingBox: bestObservation.boundingBox)
+    }
+    
+    private func placeHighlighterNode(atCenterOfBoundingBox boundingBox: CGRect) {
+        guard let displayTransform = sceneView.session.currentFrame?.displayTransform(for: .landscapeLeft, viewportSize: screenSize) else { return }
+        
+        let viewBoundingBox = viewSpaceBoundingBox(fromNormalizedImageBoundingBox: boundingBox,
+                                                   usingDisplayTransform: displayTransform)
+        
+        let midPoint = CGPoint(x: viewBoundingBox.midX,
+                               y: viewBoundingBox.midY)
+
+        let results = sceneView.hitTest(midPoint, types: .featurePoint)
+        guard let result = results.first else { return }
+        
+        let translation =  result.worldTransform.columns.3
+        highlighterNode?.simdWorldPosition = simd_float3(translation.x, translation.y, translation.z)
+        highlighterNode?.isHidden = false
+        
+        quadNode?.simdWorldPosition = highlighterNode!.simdWorldPosition
+        quadNode?.nonLinearDepth = 100//Float(gl_FragDepth)
+    }
+    
+    private func viewSpaceBoundingBox(fromNormalizedImageBoundingBox imageBoundingBox: CGRect,
+                                      usingDisplayTransform displayTransorm: CGAffineTransform) -> CGRect {
+        // Transform into normalized view coordinates
+        let viewNormalizedBoundingBox = imageBoundingBox.applying(displayTransorm)
+        // The affine transform for view coordinates
+        let t = CGAffineTransform(scaleX: screenSize.width, y: screenSize.height)
+        // Scale up to view coordinates
+        return viewNormalizedBoundingBox.applying(t)
     }
     
     func renderer(_ renderer: SCNSceneRenderer, willRenderScene scene: SCNScene, atTime time: TimeInterval) {
-        guard let capturedImage = sceneView.session.currentFrame?.capturedImage else { return }
+        guard let capturedImage = sceneView.session.currentFrame?.capturedImage,
+              !isRequestingImage
+        else { return }
         
         let capturedImageAspectRatio = Float(CVPixelBufferGetWidth(capturedImage)) / Float(CVPixelBufferGetHeight(capturedImage))
         let screenAspectRatio = Float(screenSize.height / screenSize.width)
@@ -159,10 +217,16 @@ class ViewController: UIViewController, ARSCNViewDelegate {
                                                         orientation: .leftMirrored,
                                                         options: [:])
         do {
+            isRequestingImage = true
             try imageRequestHandler.perform([objectDetectionRequest, segmentationRequest])
         } catch {
             print("Failed to perform image request. \(error)")
             segmentationRequest.regionOfInterest = CGRect(x: 0, y: 0, width: 1, height: 1)
+            isRequestingImage = false
         }
+    }
+    
+    func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
+        
     }
 }
