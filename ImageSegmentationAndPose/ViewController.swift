@@ -79,7 +79,6 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         screenSize = UIScreen.main.bounds.size
         
         let quadNode = GlowOutlineQuadNode(sceneView: sceneView)
-        //quadNode.renderingOrder = 100
         quadNode.classificationLabelIndex = targetObjectLabelindex
         sceneView.scene.rootNode.addChildNode(quadNode)
         
@@ -169,9 +168,11 @@ class ViewController: UIViewController, ARSCNViewDelegate {
               index < 3
         else { return }
         
-        segmentationRequest.regionOfInterest = bestObservation.boundingBox
-        quadNode?.regionOfInterest = bestObservation.boundingBox
-        placeHighlighterNode(atCenterOfBoundingBox: bestObservation.boundingBox)
+        let inset = bestObservation.boundingBox.insetByNormalized(d: -0.1)
+        print(inset)
+        segmentationRequest.regionOfInterest = inset
+        quadNode?.regionOfInterest = inset
+        placeHighlighterNode(atCenterOfBoundingBox: inset)
     }
     
     private func placeHighlighterNode(atCenterOfBoundingBox boundingBox: CGRect) {
@@ -236,9 +237,5 @@ class ViewController: UIViewController, ARSCNViewDelegate {
             segmentationRequest.regionOfInterest = CGRect(x: 0, y: 0, width: 1, height: 1)
             isRequestingImage = false
         }
-    }
-    
-    func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
-        
     }
 }

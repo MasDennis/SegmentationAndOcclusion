@@ -53,9 +53,9 @@ struct FragmentOut {
 };
 
 fragment FragmentOut screenQuadFragment(ScreenQuadVertex inVertex [[stage_in]],
-                                   float4 frameBufferColor [[color(0)]],
-                                   texture2d<uint, access::sample> segmentationTexture [[texture(0)]],
-                                   const constant Uniforms& uniforms [[buffer(0)]])
+                                        float4 frameBufferColor [[color(0)]],
+                                        texture2d<uint, access::sample> segmentationTexture [[texture(0)]],
+                                        const constant Uniforms& uniforms [[buffer(0)]])
 {
     FragmentOut out;
     out.color = float4(0);
@@ -66,7 +66,7 @@ fragment FragmentOut screenQuadFragment(ScreenQuadVertex inVertex [[stage_in]],
     
     uint4 texColor = segmentationTexture.sample(s, uv);
     if(texColor.r == uniforms.classificationLabelIndex) {
-        out.color = mix(float4(0, 1, 0, 1), frameBufferColor, 0);
+//        out.color = mix(float4(0, 1, 0, 0), frameBufferColor, 0);
         out.depth = uniforms.nonLinearDepth;
     } else {
         discard_fragment();

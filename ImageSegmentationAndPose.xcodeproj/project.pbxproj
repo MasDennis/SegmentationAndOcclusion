@@ -13,6 +13,7 @@
 		EF4135BF2547746100C05FC7 /* GlowOutlineQuadNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF4135BE2547746100C05FC7 /* GlowOutlineQuadNode.swift */; };
 		EF65AAC425493B3000FBED7A /* YOLOv3Int8LUT.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = EF65AAC325493B3000FBED7A /* YOLOv3Int8LUT.mlmodel */; };
 		EF65AAC725493BB700FBED7A /* YOLOv3Tiny.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = EF65AAC625493BB700FBED7A /* YOLOv3Tiny.mlmodel */; };
+		EF68A84D254C65B00092EA24 /* CGRect+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF68A84C254C65B00092EA24 /* CGRect+Extensions.swift */; };
 		EF6AB205254871BD0048FDD8 /* CVPixelBuffer+Helpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF6AB204254871BD0048FDD8 /* CVPixelBuffer+Helpers.swift */; };
 		EFB6F02D252D96520070AEBF /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFB6F02C252D96520070AEBF /* AppDelegate.swift */; };
 		EFB6F02F252D96520070AEBF /* art.scnassets in Resources */ = {isa = PBXBuildFile; fileRef = EFB6F02E252D96520070AEBF /* art.scnassets */; };
@@ -29,6 +30,7 @@
 		EF4135BE2547746100C05FC7 /* GlowOutlineQuadNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlowOutlineQuadNode.swift; sourceTree = "<group>"; };
 		EF65AAC325493B3000FBED7A /* YOLOv3Int8LUT.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = YOLOv3Int8LUT.mlmodel; sourceTree = "<group>"; };
 		EF65AAC625493BB700FBED7A /* YOLOv3Tiny.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = YOLOv3Tiny.mlmodel; sourceTree = "<group>"; };
+		EF68A84C254C65B00092EA24 /* CGRect+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CGRect+Extensions.swift"; sourceTree = "<group>"; };
 		EF6AB204254871BD0048FDD8 /* CVPixelBuffer+Helpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CVPixelBuffer+Helpers.swift"; sourceTree = "<group>"; };
 		EFB6F029252D96520070AEBF /* ImageSegmentationAndPose.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ImageSegmentationAndPose.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EFB6F02C252D96520070AEBF /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -84,6 +86,7 @@
 				EF4135BB2547710400C05FC7 /* Shaders.metal */,
 				EF4135BE2547746100C05FC7 /* GlowOutlineQuadNode.swift */,
 				EF6AB204254871BD0048FDD8 /* CVPixelBuffer+Helpers.swift */,
+				EF68A84C254C65B00092EA24 /* CGRect+Extensions.swift */,
 			);
 			path = ImageSegmentationAndPose;
 			sourceTree = "<group>";
@@ -168,6 +171,7 @@
 				EF4135BF2547746100C05FC7 /* GlowOutlineQuadNode.swift in Sources */,
 				EFB6F031252D96520070AEBF /* ViewController.swift in Sources */,
 				EFB6F02D252D96520070AEBF /* AppDelegate.swift in Sources */,
+				EF68A84D254C65B00092EA24 /* CGRect+Extensions.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
