@@ -15,7 +15,6 @@ struct ScreenQuadVertex
 };
 
 struct Uniforms {
-    float4x4 modelViewProjectionMatrix;
     float capturedImageAspectRatio;
     float nonLinearDepth;
     float2 regionOfInterestOrigin;

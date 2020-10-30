@@ -190,8 +190,20 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         highlighterNode?.simdWorldPosition = simd_float3(translation.x, translation.y, translation.z)
         highlighterNode?.isHidden = false
         
-        quadNode?.simdWorldPosition = highlighterNode!.simdWorldPosition
-        quadNode?.nonLinearDepth = 100//Float(gl_FragDepth)
+        guard let camera = sceneView.pointOfView?.camera else { return }
+        
+        quadNode?.nonLinearDepth = calculateFragmentDepth(usingCamera: camera,
+                                                          distanceToTarget: Double(result.distance),
+                                                          usesReverseZ: sceneView.usesReverseZ)
+    }
+    
+    private func calculateFragmentDepth(usingCamera camera: SCNCamera, distanceToTarget: Double, usesReverseZ: Bool) -> Float {
+        let zFar = usesReverseZ ? camera.zNear : camera.zFar
+        let zNear = usesReverseZ ? camera.zFar : camera.zNear
+        let range = 2.0 * zNear * zFar
+        let fragmentDepth = (zFar + zNear - range / distanceToTarget) / (zFar - zNear)
+
+        return Float((fragmentDepth + 1.0) / 2.0)
     }
     
     private func viewSpaceBoundingBox(fromNormalizedImageBoundingBox imageBoundingBox: CGRect,

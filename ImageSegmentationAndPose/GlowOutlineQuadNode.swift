@@ -15,7 +15,6 @@ class GlowOutlineQuadNode: SCNNode {
     private var viewSize = CGSize.zero
     
     struct Uniforms {
-        let modelViewProjectionMatrix: matrix_float4x4
         let capturedImageAspectRatio: simd_float1
         let nonLinearDepth: simd_float1
         let regionOfInterestOrigin: simd_float2
@@ -71,14 +70,8 @@ extension GlowOutlineQuadNode: SCNNodeRendererDelegate {
               let segmentationTexture = segmentationTexture
         else { return }
 
-        let mvp = float4x4(arguments[SCNModelViewProjectionTransform] as! SCNMatrix4)
-        
-        //let bab = simd_float4(simdPosition, 1.0) * mvp
-        print(mvp[3][2])
-        
-        var uniforms = Uniforms(modelViewProjectionMatrix: mvp,
-                                capturedImageAspectRatio: correctionAspectRatio,
-                                nonLinearDepth: mvp[3][2],
+        var uniforms = Uniforms(capturedImageAspectRatio: correctionAspectRatio,
+                                nonLinearDepth: nonLinearDepth,
                                 regionOfInterestOrigin: simd_float2(x: Float(regionOfInterest.origin.x), y: Float(regionOfInterest.origin.y)),
                                 regionOfInterestSize: simd_float2(x: Float(regionOfInterest.size.width), y: Float(regionOfInterest.size.height)),
                                 classificationLabelIndex: simd_uint1(classificationLabelIndex))
