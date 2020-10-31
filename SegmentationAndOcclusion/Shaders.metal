@@ -15,7 +15,7 @@ struct ScreenQuadVertex
 };
 
 struct Uniforms {
-    float capturedImageAspectRatio;
+    float aspectRatioAdjustment;
     float depthBufferZ;
     float time;
     float4 regionOfInterest;
@@ -41,7 +41,7 @@ vertex ScreenQuadVertex screenQuadVertex(uint vertex_id [[vertex_id]],
 {
     ScreenQuadVertex outVertex;
     outVertex.position = quadVertices[vertex_id];
-    outVertex.position.x *= uniforms.capturedImageAspectRatio;
+    outVertex.position.x *= uniforms.aspectRatioAdjustment;
     outVertex.texcoord = quadTextureCoordinates[vertex_id];
     
     return outVertex;
@@ -60,6 +60,8 @@ fragment FragmentOut screenQuadFragment(ScreenQuadVertex inVertex [[stage_in]],
     out.color = float4(0);
     
     float2 uv = inVertex.texcoord;
+    // Scales the texture coordinates to the region of interest.
+    // regionOfInterest is a CGRect (x, y, width, height) stored in a float4 (x, y, z, w).
     uv.x -= uniforms.regionOfInterest.x;
     uv.y -= 1.0 - (uniforms.regionOfInterest.y + uniforms.regionOfInterest.w);
     uv /= uniforms.regionOfInterest.zw;
@@ -70,6 +72,7 @@ fragment FragmentOut screenQuadFragment(ScreenQuadVertex inVertex [[stage_in]],
         out.color = float4(1, 1, 0, 0.25 * time);
         out.depth = uniforms.depthBufferZ;
     } else {
+        // Discard color and depth information.
         discard_fragment();
     }
     

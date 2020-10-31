@@ -108,6 +108,8 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         
         guard let observation = request.results?.first as? VNPixelBufferObservation else { return }
 
+        // The kCVPixelBufferMetalCompatibilityKey needs to be set if we want
+        // to use the texture in a Metal shader.
         let pixelBuffer = observation.pixelBuffer.copyToMetalCompatible()!
         
         if textureCache == nil && CVMetalTextureCacheCreate(kCFAllocatorDefault, nil, MTLCreateSystemDefaultDevice()!, nil, &textureCache) != kCVReturnSuccess {
@@ -169,6 +171,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         let midPoint = CGPoint(x: viewBoundingBox.midX,
                                y: viewBoundingBox.midY)
 
+        // Get the feature point that is closed to our detected rectangle's center
         let results = sceneView.hitTest(midPoint, types: .featurePoint)
         
         guard let result = results.first else { return }
@@ -179,17 +182,23 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         
         guard let camera = sceneView.pointOfView?.camera else { return }
         
+        // Calculate the z buffer value so we can use it in the fragment shader.
+        // For the sake of occulsion, we need to write this value into the depth buffer.
+        // This will happen in the fragment shader.
         quadNode?.depthBufferZ = calculateFragmentDepth(usingCamera: camera,
-                                                          distanceToTarget: Double(result.distance),
-                                                          usesReverseZ: sceneView.usesReverseZ)
+                                                        distanceToTarget: Double(result.distance),
+                                                        usesReverseZ: sceneView.usesReverseZ)
     }
     
     private func calculateFragmentDepth(usingCamera camera: SCNCamera, distanceToTarget: Double, usesReverseZ: Bool) -> Float {
+        // SceneKit uses a reverse z buffer since iOS 13. In case it uses a reverse buffer.
+        // We'll need to swap the near and far planes.
         let zFar = usesReverseZ ? camera.zNear : camera.zFar
         let zNear = usesReverseZ ? camera.zFar : camera.zNear
         let range = 2.0 * zNear * zFar
+        // The depth value in in normalized device coordinates [-1, 1].
         let fragmentDepth = (zFar + zNear - range / distanceToTarget) / (zFar - zNear)
-
+        // Convert to normalized coordinates [0, 1].
         return Float((fragmentDepth + 1.0) / 2.0)
     }
     
@@ -206,9 +215,10 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     func renderer(_ renderer: SCNSceneRenderer, willRenderScene scene: SCNScene, atTime time: TimeInterval) {
         guard let capturedImage = sceneView.session.currentFrame?.capturedImage else { return }
         
+        // We'll have to take into account the different aspect ratios
         let capturedImageAspectRatio = Float(CVPixelBufferGetWidth(capturedImage)) / Float(CVPixelBufferGetHeight(capturedImage))
         let screenAspectRatio = Float(screenSize.height / screenSize.width)
-        quadNode?.correctionAspectRatio = screenAspectRatio / capturedImageAspectRatio
+        quadNode?.aspectRationAdjustment = screenAspectRatio / capturedImageAspectRatio
         
         let imageRequestHandler = VNImageRequestHandler(cvPixelBuffer: capturedImage,
                                                         orientation: .leftMirrored,

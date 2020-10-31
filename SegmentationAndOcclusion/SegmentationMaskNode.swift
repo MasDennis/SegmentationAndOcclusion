@@ -15,14 +15,14 @@ class SegmentationMaskNode: SCNNode {
     private var viewSize = CGSize.zero
     
     struct Uniforms {
-        let capturedImageAspectRatio: simd_float1
+        let aspectRatioAdjustment: simd_float1
         let depthBufferZ: simd_float1
         let time: simd_float1
         let regionOfInterest: simd_float4
         let classificationLabelIndex: simd_uint1
     }
     
-    var correctionAspectRatio: Float = 0
+    var aspectRationAdjustment: Float = 0
     var classificationLabelIndex: UInt = 0
     var depthBufferZ: Float = 0
     var regionOfInterest: CGRect = .zero
@@ -76,7 +76,7 @@ extension SegmentationMaskNode: SCNNodeRendererDelegate {
                               Float(regionOfInterest.size.width),
                               Float(regionOfInterest.size.height))
 
-        var uniforms = Uniforms(capturedImageAspectRatio: correctionAspectRatio,
+        var uniforms = Uniforms(aspectRatioAdjustment: aspectRationAdjustment,
                                 depthBufferZ: depthBufferZ,
                                 time: Float(CACurrentMediaTime()),
                                 regionOfInterest: roi,
