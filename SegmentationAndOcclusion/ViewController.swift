@@ -19,8 +19,6 @@
 import UIKit
 import Vision
 import ARKit
-import Accelerate
-import CoreImage
 
 class ViewController: UIViewController, ARSCNViewDelegate {
 
@@ -29,16 +27,10 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     private var screenSize: CGSize!
     private var textureCache: CVMetalTextureCache?
     
+    // Deeplab labels
     private let labels = ["background", "aeroplane", "bicycle", "bird", "board", "bottle", "bus", "car", "cat", "chair", "cow", "diningTable", "dog", "horse", "motorbike", "person", "pottedPlant", "sheep", "sofa", "train", "tvOrMonitor"]
     private let targetObjectLabel = "car"
     private var targetObjectLabelindex: UInt { return UInt(labels.firstIndex(of: targetObjectLabel) ?? 0) }
-    
-    private let imageRequestStateQueue = DispatchQueue(label: "ImageCaptureStateQueue")
-    private var _isRequestingImage = false
-    private(set) var isRequestingImage: Bool {
-        get { return imageRequestStateQueue.sync { return _isRequestingImage } }
-        set { imageRequestStateQueue.sync { [weak self] in self?._isRequestingImage = newValue } }
-    }
     
     private weak var quadNode: SegmentationMaskNode?
     private weak var highlighterNode: SCNNode?
@@ -109,10 +101,6 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     }
     
     private func processSegmentations(for request: VNRequest, error: Error?) {
-        defer {
-            isRequestingImage = false
-        }
-        
         guard error == nil else {
             print("Segmentation error: \(error!.localizedDescription)")
             return
@@ -216,9 +204,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     }
     
     func renderer(_ renderer: SCNSceneRenderer, willRenderScene scene: SCNScene, atTime time: TimeInterval) {
-        guard let capturedImage = sceneView.session.currentFrame?.capturedImage,
-              !isRequestingImage
-        else { return }
+        guard let capturedImage = sceneView.session.currentFrame?.capturedImage else { return }
         
         let capturedImageAspectRatio = Float(CVPixelBufferGetWidth(capturedImage)) / Float(CVPixelBufferGetHeight(capturedImage))
         let screenAspectRatio = Float(screenSize.height / screenSize.width)
@@ -228,11 +214,9 @@ class ViewController: UIViewController, ARSCNViewDelegate {
                                                         orientation: .leftMirrored,
                                                         options: [:])
         do {
-            isRequestingImage = true
             try imageRequestHandler.perform([objectDetectionRequest, segmentationRequest])
         } catch {
             print("Failed to perform image request. \(error)")
-            isRequestingImage = false
         }
     }
 }
