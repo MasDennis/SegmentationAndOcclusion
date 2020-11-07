@@ -22,7 +22,7 @@ class SegmentationMaskNode: SCNNode {
         let classificationLabelIndex: simd_uint1
     }
     
-    var aspectRationAdjustment: Float = 0
+    var aspectRatioAdjustment: Float = 0
     var classificationLabelIndex: UInt = 0
     var depthBufferZ: Float = 0
     var regionOfInterest: CGRect = .zero
@@ -76,7 +76,7 @@ extension SegmentationMaskNode: SCNNodeRendererDelegate {
                               Float(regionOfInterest.size.width),
                               Float(regionOfInterest.size.height))
 
-        var uniforms = Uniforms(aspectRatioAdjustment: aspectRationAdjustment,
+        var uniforms = Uniforms(aspectRatioAdjustment: aspectRatioAdjustment,
                                 depthBufferZ: depthBufferZ,
                                 time: Float(CACurrentMediaTime()),
                                 regionOfInterest: roi,

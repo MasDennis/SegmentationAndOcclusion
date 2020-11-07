@@ -5,17 +5,6 @@
 //  Created by Dennis Ippel on 07/10/2020.
 //
 
-// https://machinethink.net/blog/coreml-image-mlmultiarray/
-// import coremltools
-// import coremltools.proto.FeatureTypes_pb2 as ft
-// spec = coremltools.utils.load_spec("DeepLabV3Int8LUT.mlmodel")
-// print(spec.description)
-// output = spec.description.output[0]
-// output.type.imageType.height = 513
-// output.type.imageType.width = 513
-// output.type.imageType.colorSpace = ft.ImageFeatureType.GRAYSCALE
-// coremltools.utils.save_spec(spec, "DeepLabV3Int8Image.mlmodel"
-
 import UIKit
 import Vision
 import ARKit
@@ -218,7 +207,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         // We'll have to take into account the different aspect ratios
         let capturedImageAspectRatio = Float(CVPixelBufferGetWidth(capturedImage)) / Float(CVPixelBufferGetHeight(capturedImage))
         let screenAspectRatio = Float(screenSize.height / screenSize.width)
-        quadNode?.aspectRationAdjustment = screenAspectRatio / capturedImageAspectRatio
+        quadNode?.aspectRatioAdjustment = screenAspectRatio / capturedImageAspectRatio
         
         let imageRequestHandler = VNImageRequestHandler(cvPixelBuffer: capturedImage,
                                                         orientation: .leftMirrored,
